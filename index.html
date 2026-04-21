@@ -2,196 +2,274 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor de Precios - Alerta Inteligente</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calculadora de Precios GT</title>
     <style>
         :root {
             --primary: #2563eb;
             --danger: #dc2626;
             --success: #16a34a;
             --warning: #f59e0b;
-            --bg: #f8fafc;
+            --bg: #f1f5f9;
         }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        h2 { color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; text-align: center; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 0.85rem; color: #64748b; }
-        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 15px;
+            padding-bottom: 120px; /* Espacio para el resumen fijo */
+        }
 
-        input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; transition: 0.2s; }
-        input:focus { outline: 2px solid var(--primary); border-color: transparent; background: #fff; }
+        h2 { font-size: 1.4rem; color: #1e293b; text-align: center; margin-bottom: 20px; }
 
-        .btn { padding: 10px 16px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; }
-        .btn-add { background: var(--primary); color: white; margin-bottom: 1rem; }
-        .btn-del { background: #fee2e2; color: var(--danger); }
+        /* Estilo de Tarjetas para Celular */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+            border: 2px solid transparent;
+            transition: 0.3s;
+        }
 
-        /* Estilo de Alerta cuando supera el 3% */
         .alert-active { 
-            background-color: #fff7ed !important; 
-            border: 2px solid var(--warning) !important;
-            box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.2);
+            border-color: var(--warning);
+            background-color: #fffbeb;
         }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         
-        .badge-alert { 
-            background: var(--warning); 
-            color: #fff; 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            font-weight: bold; 
-            animation: shake 0.5s ease-in-out;
+        .desc-input {
+            border: none;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 80%;
+            padding: 5px 0;
         }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
 
-        #toast-box { position: fixed; top: 20px; right: 20px; z-index: 100; }
-        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid var(--warning); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 4px; }
 
-        .summary { display: flex; justify-content: space-around; margin-top: 20px; background: #f1f5f9; padding: 20px; border-radius: 8px; }
-        .stat { text-align: center; }
-        .stat label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px; }
-        .stat span { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f8fafc;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        /* Botones */
+        .btn-add {
+            display: block;
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .btn-del {
+            background: #fee2e2;
+            color: var(--danger);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        /* Resumen Fijo Inferior */
+        .footer-summary {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .stat-group div { font-size: 0.8rem; opacity: 0.8; }
+        .stat-group span { font-size: 1.1rem; font-weight: bold; }
+
+        .perc-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            width: 90%;
+        }
+
+        .toast {
+            background: #334155;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--warning);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
 
-<div id="toast-box"></div>
+<div id="toast-container"></div>
 
-<div class="container">
-    <h2>📊 Control de Precios (Alerta > 3%)</h2>
-    
-    <button class="btn btn-add" onclick="addRow()">+ Agregar Nuevo Item</button>
+<h2>📊 Monitor de Variación</h2>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Descripción</th>
-                <th>Precio Anterior (Q)</th>
-                <th>Precio Nuevo (Q)</th>
-                <th>Diferencia</th>
-                <th>Variación %</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+<button class="btn-add" onclick="addCard()">+ Agregar Producto / Servicio</button>
 
-    <div class="summary">
-        <div class="stat">
-            <label>Total Anterior</label>
-            <span id="totalOld">Q0.00</span>
-        </div>
-        <div class="stat">
-            <label>Total Nuevo</label>
-            <span id="totalNew">Q0.00</span>
-        </div>
-        <div class="stat">
-            <label>Estado Global</label>
-            <span id="totalPerc">0.00%</span>
-        </div>
+<div id="cardsContainer"></div>
+
+<div class="footer-summary">
+    <div class="stat-group">
+        <div>Total Nuevo</div>
+        <span id="totalNew">Q0.00</span>
+    </div>
+    <div style="text-align: right;">
+        <div>Variación Global</div>
+        <span id="totalPerc">0.00%</span>
     </div>
 </div>
 
 <script>
-    let notifiedRows = new Set();
+    let notifiedCards = new Set();
 
-    function addRow() {
-        const id = 'row_' + Math.random().toString(36).substr(2, 9);
+    function addCard() {
+        const id = 'card_' + Math.random().toString(36).substr(2, 9);
         const html = `
-            <tr id="${id}">
-                <td><input type="text" class="desc" placeholder="Nombre..."></td>
-                <td><input type="number" class="old-p" placeholder="0.00" oninput="checkData('${id}')"></td>
-                <td><input type="number" class="new-p" placeholder="0.00" oninput="checkData('${id}')"></td>
-                <td class="diff">Q0.00</td>
-                <td class="perc">-</td>
-                <td><button class="btn btn-del" onclick="removeRow('${id}')">✕</button></td>
-            </tr>
+            <div class="card" id="${id}">
+                <div class="card-header">
+                    <input type="text" class="desc-input" placeholder="Nombre (Ej. Luz, Gas)">
+                    <button class="btn-del" onclick="removeCard('${id}')">✕</button>
+                </div>
+                <div class="grid-inputs">
+                    <div>
+                        <label>Precio Anterior</label>
+                        <input type="number" class="old-p" placeholder="Q" step="0.01" inputmode="decimal" oninput="calculate('${id}')">
+                    </div>
+                    <div>
+                        <label>Precio Nuevo</label>
+                        <input type="number" class="new-p" placeholder="Q" step="0.01" inputmode="decimal" oninput="calculate('${id}')">
+                    </div>
+                </div>
+                <div class="result-row">
+                    <span>Diferencia: <strong class="diff-val">Q0.00</strong></span>
+                    <span class="perc-val">0.00%</span>
+                </div>
+            </div>
         `;
-        document.getElementById('tableBody').insertAdjacentHTML('beforeend', html);
+        document.getElementById('cardsContainer').insertAdjacentHTML('afterbegin', html);
     }
 
-    function removeRow(id) {
+    function removeCard(id) {
         document.getElementById(id).remove();
-        notifiedRows.delete(id);
-        updateSummary();
+        notifiedCards.delete(id);
+        updateGlobal();
     }
 
-    function checkData(id) {
-        const row = document.getElementById(id);
-        const valOld = parseFloat(row.querySelector('.old-p').value);
-        const valNew = parseFloat(row.querySelector('.new-p').value);
-        const desc = row.querySelector('.desc').value || "Item sin nombre";
+    function calculate(id) {
+        const card = document.getElementById(id);
+        const oldP = parseFloat(card.querySelector('.old-p').value);
+        const newP = parseFloat(card.querySelector('.new-p').value);
+        const desc = card.querySelector('.desc-input').value || "Producto";
 
-        // SOLO se ejecuta si ambos tienen valores válidos y mayores a cero
-        if (!isNaN(valOld) && !isNaN(valNew) && valOld > 0 && valNew > 0) {
-            const diff = valNew - valOld;
-            const perc = (diff / valOld) * 100;
+        if (oldP > 0 && newP > 0) {
+            const diff = newP - oldP;
+            const perc = (diff / oldP) * 100;
             const absPerc = Math.abs(perc);
 
-            row.querySelector('.diff').innerText = `Q${diff.toFixed(2)}`;
+            card.querySelector('.diff-val').innerText = `Q${diff.toFixed(2)}`;
+            const percEl = card.querySelector('.perc-val');
             
-            // Lógica de Alerta
             if (absPerc >= 3) {
-                row.classList.add('alert-active');
-                row.querySelector('.perc').innerHTML = `<span class="badge-alert">${perc.toFixed(2)}%</span>`;
+                card.classList.add('alert-active');
+                percEl.innerHTML = `<span class="perc-badge" style="background:var(--warning); color:white;">${perc.toFixed(2)}%</span>`;
                 
-                // Solo avisar una vez por cambio significativo para no molestar
-                if (!notifiedRows.has(id)) {
-                    showToast(`⚠️ Variación alta en ${desc}: ${perc.toFixed(2)}%`);
-                    notifiedRows.add(id);
+                if (!notifiedCards.has(id)) {
+                    showToast(`⚠️ Variación de ${perc.toFixed(2)}% en ${desc}`);
+                    notifiedCards.add(id);
+                    if (window.navigator.vibrate) window.navigator.vibrate(100); // Vibración si está disponible
                 }
             } else {
-                row.classList.remove('alert-active');
-                notifiedRows.delete(id);
+                card.classList.remove('alert-active');
+                notifiedCards.delete(id);
                 const color = perc > 0 ? 'var(--danger)' : (perc < 0 ? 'var(--success)' : '#64748b');
-                row.querySelector('.perc').innerHTML = `<span style="color:${color}; font-weight:bold">${perc.toFixed(2)}%</span>`;
+                percEl.innerHTML = `<span style="color:${color}; font-weight:bold">${perc.toFixed(2)}%</span>`;
             }
-        } else {
-            // Si falta un dato, limpiar resultados temporales
-            row.querySelector('.diff').innerText = "Q0.00";
-            row.querySelector('.perc').innerText = "-";
-            row.classList.remove('alert-active');
         }
-        updateSummary();
+        updateGlobal();
     }
 
     function showToast(msg) {
-        const box = document.getElementById('toast-box');
+        const container = document.getElementById('toast-container');
         const t = document.createElement('div');
         t.className = 'toast';
         t.innerText = msg;
-        box.appendChild(t);
-        setTimeout(() => t.remove(), 4000);
+        container.appendChild(t);
+        setTimeout(() => t.remove(), 3500);
     }
 
-    function updateSummary() {
+    function updateGlobal() {
         let tOld = 0, tNew = 0;
-        document.querySelectorAll('.old-p').forEach((el, i) => {
-            const vO = parseFloat(el.value) || 0;
-            const vN = parseFloat(document.querySelectorAll('.new-p')[i].value) || 0;
-            if(vO > 0 && vN > 0) {
-                tOld += vO; tNew += vN;
-            }
+        document.querySelectorAll('.card').forEach(card => {
+            const vO = parseFloat(card.querySelector('.old-p').value) || 0;
+            const vN = parseFloat(card.querySelector('.new-p').value) || 0;
+            if (vO > 0 && vN > 0) { tOld += vO; tNew += vN; }
         });
 
-        document.getElementById('totalOld').innerText = `Q${tOld.toFixed(2)}`;
         document.getElementById('totalNew').innerText = `Q${tNew.toFixed(2)}`;
         
+        const percEl = document.getElementById('totalPerc');
         if (tOld > 0) {
             const pG = ((tNew - tOld) / tOld) * 100;
-            const elP = document.getElementById('totalPerc');
-            elP.innerText = `${pG.toFixed(2)}%`;
-            elP.style.color = pG > 0 ? 'var(--danger)' : 'var(--success)';
+            percEl.innerText = `${pG.toFixed(2)}%`;
+            percEl.style.color = pG > 0 ? '#ff8a8a' : '#8aff8a';
+        } else {
+            percEl.innerText = "0.00%";
         }
     }
 
-    window.onload = addRow;
+    // Iniciar con una tarjeta
+    window.onload = addCard;
 </script>
 
 </body>
