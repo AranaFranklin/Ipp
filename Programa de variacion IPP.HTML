@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Precios - Alerta Inteligente</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        
+        h2 { color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; text-align: center; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 0.85rem; color: #64748b; }
+        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+
+        input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; transition: 0.2s; }
+        input:focus { outline: 2px solid var(--primary); border-color: transparent; background: #fff; }
+
+        .btn { padding: 10px 16px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; }
+        .btn-add { background: var(--primary); color: white; margin-bottom: 1rem; }
+        .btn-del { background: #fee2e2; color: var(--danger); }
+
+        /* Estilo de Alerta cuando supera el 3% */
+        .alert-active { 
+            background-color: #fff7ed !important; 
+            border: 2px solid var(--warning) !important;
+            box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+        
+        .badge-alert { 
+            background: var(--warning); 
+            color: #fff; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        #toast-box { position: fixed; top: 20px; right: 20px; z-index: 100; }
+        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid var(--warning); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        .summary { display: flex; justify-content: space-around; margin-top: 20px; background: #f1f5f9; padding: 20px; border-radius: 8px; }
+        .stat { text-align: center; }
+        .stat label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px; }
+        .stat span { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div id="toast-box"></div>
+
+<div class="container">
+    <h2>📊 Control de Precios (Alerta > 3%)</h2>
+    
+    <button class="btn btn-add" onclick="addRow()">+ Agregar Nuevo Item</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Descripción</th>
+                <th>Precio Anterior (Q)</th>
+                <th>Precio Nuevo (Q)</th>
+                <th>Diferencia</th>
+                <th>Variación %</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <div class="summary">
+        <div class="stat">
+            <label>Total Anterior</label>
+            <span id="totalOld">Q0.00</span>
+        </div>
+        <div class="stat">
+            <label>Total Nuevo</label>
+            <span id="totalNew">Q0.00</span>
+        </div>
+        <div class="stat">
+            <label>Estado Global</label>
+            <span id="totalPerc">0.00%</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    let notifiedRows = new Set();
+
+    function addRow() {
+        const id = 'row_' + Math.random().toString(36).substr(2, 9);
+        const html = `
+            <tr id="${id}">
+                <td><input type="text" class="desc" placeholder="Nombre..."></td>
+                <td><input type="number" class="old-p" placeholder="0.00" oninput="checkData('${id}')"></td>
+                <td><input type="number" class="new-p" placeholder="0.00" oninput="checkData('${id}')"></td>
+                <td class="diff">Q0.00</td>
+                <td class="perc">-</td>
+                <td><button class="btn btn-del" onclick="removeRow('${id}')">✕</button></td>
+            </tr>
+        `;
+        document.getElementById('tableBody').insertAdjacentHTML('beforeend', html);
+    }
+
+    function removeRow(id) {
+        document.getElementById(id).remove();
+        notifiedRows.delete(id);
+        updateSummary();
+    }
+
+    function checkData(id) {
+        const row = document.getElementById(id);
+        const valOld = parseFloat(row.querySelector('.old-p').value);
+        const valNew = parseFloat(row.querySelector('.new-p').value);
+        const desc = row.querySelector('.desc').value || "Item sin nombre";
+
+        // SOLO se ejecuta si ambos tienen valores válidos y mayores a cero
+        if (!isNaN(valOld) && !isNaN(valNew) && valOld > 0 && valNew > 0) {
+            const diff = valNew - valOld;
+            const perc = (diff / valOld) * 100;
+            const absPerc = Math.abs(perc);
+
+            row.querySelector('.diff').innerText = `Q${diff.toFixed(2)}`;
+            
+            // Lógica de Alerta
+            if (absPerc >= 3) {
+                row.classList.add('alert-active');
+                row.querySelector('.perc').innerHTML = `<span class="badge-alert">${perc.toFixed(2)}%</span>`;
+                
+                // Solo avisar una vez por cambio significativo para no molestar
+                if (!notifiedRows.has(id)) {
+                    showToast(`⚠️ Variación alta en ${desc}: ${perc.toFixed(2)}%`);
+                    notifiedRows.add(id);
+                }
+            } else {
+                row.classList.remove('alert-active');
+                notifiedRows.delete(id);
+                const color = perc > 0 ? 'var(--danger)' : (perc < 0 ? 'var(--success)' : '#64748b');
+                row.querySelector('.perc').innerHTML = `<span style="color:${color}; font-weight:bold">${perc.toFixed(2)}%</span>`;
+            }
+        } else {
+            // Si falta un dato, limpiar resultados temporales
+            row.querySelector('.diff').innerText = "Q0.00";
+            row.querySelector('.perc').innerText = "-";
+            row.classList.remove('alert-active');
+        }
+        updateSummary();
+    }
+
+    function showToast(msg) {
+        const box = document.getElementById('toast-box');
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.innerText = msg;
+        box.appendChild(t);
+        setTimeout(() => t.remove(), 4000);
+    }
+
+    function updateSummary() {
+        let tOld = 0, tNew = 0;
+        document.querySelectorAll('.old-p').forEach((el, i) => {
+            const vO = parseFloat(el.value) || 0;
+            const vN = parseFloat(document.querySelectorAll('.new-p')[i].value) || 0;
+            if(vO > 0 && vN > 0) {
+                tOld += vO; tNew += vN;
+            }
+        });
+
+        document.getElementById('totalOld').innerText = `Q${tOld.toFixed(2)}`;
+        document.getElementById('totalNew').innerText = `Q${tNew.toFixed(2)}`;
+        
+        if (tOld > 0) {
+            const pG = ((tNew - tOld) / tOld) * 100;
+            const elP = document.getElementById('totalPerc');
+            elP.innerText = `${pG.toFixed(2)}%`;
+            elP.style.color = pG > 0 ? 'var(--danger)' : 'var(--success)';
+        }
+    }
+
+    window.onload = addRow;
+</script>
+
+</body>
+</html>
