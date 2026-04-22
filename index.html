@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor PRO - Referencia Cruzada</title>
+    <title>Monitor PRO - Precisión y Limpieza</title>
     <style>
         :root {
             --bg: #f1f5f9;
@@ -13,16 +13,19 @@
             --down: #ef4444; 
             --warning: #f59e0b;
             --dark: #1e293b;
+            --danger: #dc2626;
         }
 
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 110px; color: #334155; }
         
         .navbar { background: var(--white); padding: 15px; text-align: center; border-bottom: 1px solid #e2e8f0; font-weight: bold; }
-        .controls { background: var(--primary); padding: 12px; display: flex; justify-content: center; gap: 10px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .controls { background: var(--primary); padding: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         
-        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 0.9rem; }
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 0.85rem; transition: 0.2s; }
         .btn-add { background: rgba(255,255,255,0.2); border: 1px solid white; }
-        .btn-report { background: var(--warning); box-shadow: 0 4px 0 #d97706; }
+        .btn-report { background: var(--warning); }
+        .btn-clear { background: var(--danger); border: 1px solid rgba(0,0,0,0.1); }
+        .btn-clear:hover { background: #b91c1c; }
 
         #product-list { padding: 15px; max-width: 850px; margin: auto; }
         .card { background: var(--white); border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid #e2e8f0; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -54,8 +57,9 @@
     <div class="navbar">MONITOR DE VARIACIÓN PRO</div>
     
     <div class="controls">
-        <button class="btn btn-add" onclick="addCard()">+ AGREGAR PRODUCTO</button>
-        <button class="btn btn-report" onclick="showReport()">📋 GENERAR INFORME</button>
+        <button class="btn btn-add" onclick="addCard()">+ AGREGAR</button>
+        <button class="btn btn-report" onclick="showReport()">📋 INFORME</button>
+        <button class="btn btn-clear" onclick="clearAll()">🗑️ BORRAR TODO</button>
     </div>
 
     <div id="product-list"></div>
@@ -78,9 +82,19 @@
 
     <script>
         const formatQ = (n) => new Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ' }).format(n);
+        const round2 = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
+
+        function clearAll() {
+            if (confirm("¿Estás seguro de que quieres borrar TODOS los productos ingresados? Esta acción no se puede deshacer.")) {
+                document.getElementById('product-list').innerHTML = "";
+                addCard(); // Agregar una tarjeta limpia después de borrar
+                calcGlobal();
+            }
+        }
 
         function update(id) {
             const card = document.getElementById(id);
+            if(!card) return;
             const pAntInput = card.querySelector('.p-ant');
             const pNueInput = card.querySelector('.p-nue');
             const sameCheck = card.querySelector('.is-same').checked;
@@ -99,48 +113,38 @@
             const vAnt = parseFloat(pAntInput.value) || 0;
             const vNueRaw = parseFloat(pNueInput.value) || 0;
 
-            // Lógica de IVA (12%)
-            let tAnt = vAnt * 1.12;
-            let nNeto = (modeNue === "con") ? vNueRaw / 1.12 : vNueRaw;
-            let tNue = (modeNue === "con") ? vNueRaw : vNueRaw * 1.12;
+            let tAnt = round2(vAnt * 1.12);
+            let nNeto = (modeNue === "con") ? round2(vNueRaw / 1.12) : round2(vNueRaw);
+            let tNue = (modeNue === "con") ? round2(vNueRaw) : round2(vNueRaw * 1.12);
 
-            // REFERENCIAS EN PARÉNTESIS
             card.querySelector('.ref-ant').innerHTML = vAnt > 0 ? `(Total c/IVA: <b>${formatQ(tAnt)}</b>)` : '';
-            
-            // Referencia dinámica del valor nuevo
             const refNue = card.querySelector('.ref-nue');
             if (vNueRaw > 0) {
-                if (modeNue === "sin") {
-                    refNue.innerHTML = `(Total c/IVA: <b>${formatQ(tNue)}</b>)`;
-                } else {
-                    refNue.innerHTML = `(Precio sin IVA: <b>${formatQ(nNeto)}</b>)`;
-                }
-            } else {
-                refNue.innerHTML = '';
-            }
+                refNue.innerHTML = (modeNue === "sin") ? `(Total c/IVA: <b>${formatQ(tNue)}</b>)` : `(Precio sin IVA: <b>${formatQ(nNeto)}</b>)`;
+            } else { refNue.innerHTML = ''; }
 
             const resDisplay = card.querySelector('.res-val');
             const diffDisplay = card.querySelector('.dif-text');
             const alertArea = card.querySelector('.alert-area');
 
             if (vAnt > 0 && vNueRaw > 0) {
-                const variacion = ((nNeto - vAnt) / vAnt) * 100;
-                const diferenciaQ = nNeto - vAnt;
-                
+                const diferenciaQ = round2(nNeto - vAnt);
+                const variacion = vAnt !== 0 ? (diferenciaQ / vAnt) * 100 : 0;
                 card.dataset.pct = variacion;
                 card.dataset.tAnt = tAnt;
                 card.dataset.tNue = tNue;
                 card.dataset.ready = "true";
 
-                resDisplay.innerText = (variacion >= 0 ? '+' : '') + variacion.toFixed(2) + '%';
+                const finalPct = Math.abs(diferenciaQ) < 0.01 ? 0 : variacion;
+                resDisplay.innerText = (finalPct >= 0 ? '+' : '') + finalPct.toFixed(2) + '%';
                 diffDisplay.innerText = `Cantidad de variación: ${formatQ(diferenciaQ)}`;
                 
-                const colorClass = variacion > 0 ? "text-up" : (variacion < 0 ? "text-down" : "");
+                const colorClass = finalPct > 0 ? "text-up" : (finalPct < 0 ? "text-down" : "");
                 resDisplay.className = "res-val " + colorClass;
                 diffDisplay.className = "dif-text " + colorClass;
 
-                if (Math.abs(variacion) >= 3) {
-                    alertArea.innerHTML = `<span style="background:${variacion > 0 ? 'var(--up)' : 'var(--down)'}; color:white; padding:3px 8px; border-radius:20px; font-size:0.65rem; font-weight:bold;">ALERTA 3%+</span>`;
+                if (Math.abs(finalPct) >= 3) {
+                    alertArea.innerHTML = `<span style="background:${finalPct > 0 ? 'var(--up)' : 'var(--down)'}; color:white; padding:3px 8px; border-radius:20px; font-size:0.65rem; font-weight:bold;">ALERTA 3%+</span>`;
                 } else { alertArea.innerHTML = ''; }
             } else {
                 card.dataset.ready = "false";
@@ -149,19 +153,20 @@
                 resDisplay.className = "res-val";
                 alertArea.innerHTML = '';
             }
-
             card.dataset.name = card.querySelector('.name').value || "Producto";
             calcGlobal();
         }
 
         function calcGlobal() {
             let tA = 0, tN = 0;
-            document.querySelectorAll('.card[data-ready="true"]').forEach(c => {
+            const readyCards = document.querySelectorAll('.card[data-ready="true"]');
+            readyCards.forEach(c => {
                 tA += parseFloat(c.dataset.tAnt) || 0;
                 tN += parseFloat(c.dataset.tNue) || 0;
             });
             document.getElementById('foot-total').innerText = formatQ(tN);
-            const gVar = tA > 0 ? ((tN - tA) / tA) * 100 : 0;
+            const gDiff = round2(tN - tA);
+            const gVar = tA > 0 ? (gDiff / tA) * 100 : 0;
             const fV = document.getElementById('foot-var');
             fV.innerText = (gVar >= 0 ? '+' : '') + gVar.toFixed(2) + '%';
             fV.className = gVar > 0 ? "text-up" : (gVar < 0 ? "text-down" : "");
@@ -177,14 +182,14 @@
 
             cards.forEach(c => {
                 const pct = parseFloat(c.dataset.pct) || 0;
-                const diffMoney = parseFloat(c.dataset.tNue) - parseFloat(c.dataset.tAnt);
+                const diffMoney = round2(parseFloat(c.dataset.tNue) - parseFloat(c.dataset.tAnt));
                 impactMoney += diffMoney;
-                const row = `<div class="item-row"><span><b>${c.dataset.name}</b></span><span class="${pct > 0 ? 'text-up' : (pct < 0 ? 'text-down' : '')}">${formatQ(diffMoney)} (${pct.toFixed(2)}%)</span></div>`;
-                if (pct > 0.01) lUp.innerHTML += row;
-                else if (pct < -0.01) lDown.innerHTML += row;
+                const row = `<div class="item-row"><span><b>${c.dataset.name}</b></span><span class="${pct > 0.005 ? 'text-up' : (pct < -0.005 ? 'text-down' : '')}">${formatQ(diffMoney)} (${pct.toFixed(2)}%)</span></div>`;
+                if (pct > 0.005) lUp.innerHTML += row;
+                else if (pct < -0.005) lDown.innerHTML += row;
                 else lEqual.innerHTML += row;
             });
-            summary.innerHTML = `<p style="margin:0;"><b>Impacto Total:</b> <span class="${impactMoney >= 0 ? 'text-up' : 'text-down'}">${formatQ(impactMoney)}</span></p>`;
+            summary.innerHTML = `<p style="margin:0;"><b>Impacto Total:</b> <span class="${impactMoney > 0.005 ? 'text-up' : (impactMoney < -0.005 ? 'text-down' : '')}">${formatQ(impactMoney)}</span></p>`;
             document.getElementById('report-overlay').style.display = "block";
         }
 
