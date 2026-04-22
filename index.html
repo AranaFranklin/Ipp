@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor PRO - Precisión y Limpieza</title>
+    <title>Variaciones de Precios IPP</title>
     <style>
         :root {
             --bg: #f1f5f9;
@@ -54,7 +54,7 @@
 </head>
 <body>
 
-    <div class="navbar">MONITOR DE VARIACIÓN PRO</div>
+    <div class="navbar">VARIACIONES DE PRECIOS IPP</div>
     
     <div class="controls">
         <button class="btn btn-add" onclick="addCard()">+ AGREGAR</button>
@@ -66,7 +66,7 @@
 
     <div id="report-overlay">
         <div class="report-window">
-            <h2 style="margin-top:0; color:var(--primary); border-bottom: 3px solid var(--primary); padding-bottom:10px;">Análisis Final</h2>
+            <h2 style="margin-top:0; color:var(--primary); border-bottom: 3px solid var(--primary); padding-bottom:10px;">Análisis Final IPP</h2>
             <div id="rep-summary" style="background:#f1f5f9; padding:15px; border-radius:10px; margin-bottom:20px;"></div>
             <div id="list-up"></div>
             <div id="list-down"></div>
@@ -85,9 +85,9 @@
         const round2 = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
         function clearAll() {
-            if (confirm("¿Estás seguro de que quieres borrar TODOS los productos ingresados? Esta acción no se puede deshacer.")) {
+            if (confirm("¿Estás seguro de que quieres borrar TODAS las variaciones IPP?")) {
                 document.getElementById('product-list').innerHTML = "";
-                addCard(); // Agregar una tarjeta limpia después de borrar
+                addCard();
                 calcGlobal();
             }
         }
@@ -174,7 +174,7 @@
 
         function showReport() {
             const cards = document.querySelectorAll('.card[data-ready="true"]');
-            if (cards.length === 0) return alert("Ingresa ambos precios para analizar.");
+            if (cards.length === 0) return alert("Ingresa datos para el informe.");
             const lUp = document.getElementById('list-up'), lDown = document.getElementById('list-down'), lEqual = document.getElementById('list-equal');
             const summary = document.getElementById('rep-summary');
             lUp.innerHTML = ""; lDown.innerHTML = ""; lEqual.innerHTML = "";
@@ -189,7 +189,7 @@
                 else if (pct < -0.005) lDown.innerHTML += row;
                 else lEqual.innerHTML += row;
             });
-            summary.innerHTML = `<p style="margin:0;"><b>Impacto Total:</b> <span class="${impactMoney > 0.005 ? 'text-up' : (impactMoney < -0.005 ? 'text-down' : '')}">${formatQ(impactMoney)}</span></p>`;
+            summary.innerHTML = `<p style="margin:0;"><b>Impacto Total IPP:</b> <span class="${impactMoney > 0.005 ? 'text-up' : (impactMoney < -0.005 ? 'text-down' : '')}">${formatQ(impactMoney)}</span></p>`;
             document.getElementById('report-overlay').style.display = "block";
         }
 
